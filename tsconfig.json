@@ -14,7 +14,9 @@
         "moduleDetection": "force",
         /* Project Structure */
         "baseUrl": "./",
-        "paths": { "@/*": ["src/*"] },
+        "paths": {
+            "@/*": ["src/*"],
+        },
         "types": ["node", "vite/client"],
         "composite": true,
         "noEmit": true,
@@ -27,5 +29,5 @@
         "noUncheckedSideEffectImports": true,
         "erasableSyntaxOnly": true
     },
-    "include": ["src", "@styles/styles.d.ts", "vite.config.ts"]
+    "include": ["src"]
 }

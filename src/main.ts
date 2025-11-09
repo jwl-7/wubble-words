@@ -1,24 +1,33 @@
-import './style.css'
-import typescriptLogo from './typescript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.ts'
+import './styles.sass'
+import './loader'
+import './app'
 
-document.querySelector<HTMLDivElement>('#app')!.innerHTML = `
-  <div>
-    <a href="https://vite.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://www.typescriptlang.org/" target="_blank">
-      <img src="${typescriptLogo}" class="logo vanilla" alt="TypeScript logo" />
-    </a>
-    <h1>Vite + TypeScript</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite and TypeScript logos to learn more
-    </p>
-  </div>
-`
+function init() {
+    const root = document.getElementById('root')
+    if (!root) throw new Error('Root element not found')
 
-setupCounter(document.querySelector<HTMLButtonElement>('#counter')!)
+    // Create loader
+    const loader = document.createElement('pacman-loader')
+    root.appendChild(loader)
+
+    // Use requestAnimationFrame to ensure DOM is updated before removing loader
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            // Safely remove loader
+            if (root.contains(loader)) {
+                root.removeChild(loader)
+            }
+
+            // Mount the app
+            const app = document.createElement('wubble-app')
+            root.appendChild(app)
+        }, 2000)
+    })
+}
+
+// Wait for DOMContentLoaded before initializing
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init)
+} else {
+    init()
+}
