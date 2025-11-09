@@ -1,9 +1,9 @@
 import './styles.sass'
 
 class WubbleApp extends HTMLElement {
-    private audioCtx: AudioContext
-    private container: HTMLDivElement
-    private wordsPool: string[] = [
+    audioCtx: AudioContext
+    container: HTMLDivElement
+    wordsPool: string[] = [
         'Boom', 'Zap', 'Wobble', 'Fizz', 'Bop', 'Bang', 'Glitch',
         'Spark', 'Pop', 'Zing', 'Wham', 'Funk', 'Twist', 'Zoom', 'Crack',
         'Bam', 'Clash', 'Splat', 'BangBang', 'Zwoop', 'Kaboom', 'Whizz', 'Thunk',
@@ -22,7 +22,7 @@ class WubbleApp extends HTMLElement {
         document.addEventListener('keydown', e => this.handleKey(e))
     }
 
-    private handleKey(_: KeyboardEvent) {
+    handleKey(_: KeyboardEvent) {
         let wordText = this.wordsPool[Math.floor(Math.random() * this.wordsPool.length)]
         wordText = wordText.split('').sort(() => Math.random() - 0.5).join('')
         const word = document.createElement('div')
@@ -60,7 +60,7 @@ class WubbleApp extends HTMLElement {
         this.playWobble()
     }
 
-    private playWobble() {
+    playWobble() {
         try {
             const now = this.audioCtx.currentTime
 
@@ -81,15 +81,15 @@ class WubbleApp extends HTMLElement {
 
             const lfo = this.audioCtx.createOscillator()
             lfo.type = 'sine'
-            lfo.frequency.value = 1 + Math.random() * 3 // slow wobble
+            lfo.frequency.value = 1 + Math.random() * 3
 
             const lfoGain = this.audioCtx.createGain()
-            lfoGain.gain.value = 10 + Math.random() * 20 // subtle depth
+            lfoGain.gain.value = 10 + Math.random() * 20
             lfo.connect(lfoGain)
             lfoGain.connect(osc.frequency)
 
             const panner = this.audioCtx.createStereoPanner()
-            panner.pan.value = Math.random() * 0.6 - 0.3 // subtle stereo motion
+            panner.pan.value = Math.random() * 0.6 - 0.3
 
             osc.connect(filter)
             filter.connect(gain)
