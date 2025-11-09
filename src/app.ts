@@ -63,32 +63,43 @@ class WubbleApp extends HTMLElement {
     private playWobble() {
         try {
             const now = this.audioCtx.currentTime
+
             const osc = this.audioCtx.createOscillator()
-            osc.type = 'triangle'
-            osc.frequency.value = 50 + Math.random() * 20
+            const oscTypes: OscillatorType[] = ['sine', 'triangle', 'sawtooth']
+            osc.type = oscTypes[Math.floor(Math.random() * 2)] // mostly sine or triangle
+            osc.frequency.value = 35 + Math.random() * 45 // sub-bass range
 
             const gain = this.audioCtx.createGain()
             gain.gain.setValueAtTime(0, now)
-            gain.gain.linearRampToValueAtTime(0.3, now + 0.02)
-            gain.gain.linearRampToValueAtTime(0, now + 0.6)
+            gain.gain.linearRampToValueAtTime(0.25 + Math.random() * 0.1, now + 0.05)
+            gain.gain.linearRampToValueAtTime(0, now + 0.5 + Math.random() * 0.3)
+
+            const filter = this.audioCtx.createBiquadFilter()
+            filter.type = 'lowpass'
+            filter.frequency.value = 200 + Math.random() * 200
+            filter.Q.value = 1 + Math.random() * 5
 
             const lfo = this.audioCtx.createOscillator()
             lfo.type = 'sine'
-            lfo.frequency.value = 3 + Math.random() * 5
+            lfo.frequency.value = 1 + Math.random() * 3 // slow wobble
 
             const lfoGain = this.audioCtx.createGain()
-            lfoGain.gain.value = 40 + Math.random() * 20
-
+            lfoGain.gain.value = 10 + Math.random() * 20 // subtle depth
             lfo.connect(lfoGain)
             lfoGain.connect(osc.frequency)
 
-            osc.connect(gain)
-            gain.connect(this.audioCtx.destination)
+            const panner = this.audioCtx.createStereoPanner()
+            panner.pan.value = Math.random() * 0.6 - 0.3 // subtle stereo motion
+
+            osc.connect(filter)
+            filter.connect(gain)
+            gain.connect(panner)
+            panner.connect(this.audioCtx.destination)
 
             osc.start(now)
-            osc.stop(now + 0.6)
+            osc.stop(now + 0.5 + Math.random() * 0.4)
             lfo.start(now)
-            lfo.stop(now + 0.6)
+            lfo.stop(now + 0.5 + Math.random() * 0.4)
         } catch { }
     }
 }
