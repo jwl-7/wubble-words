@@ -4,7 +4,10 @@ class WubbleApp extends HTMLElement {
     private audioCtx: AudioContext
     private wordsPool: string[] = [
         'Boom','Zap','Wobble','Fizz','Bop','Bang','Glitch',
-        'Spark','Pop','Zing','Wham','Funk','Twist','Zoom','Crack'
+        'Spark','Pop','Zing','Wham','Funk','Twist','Zoom','Crack',
+        'Bam','Clash','Splat','BangBang','Zwoop','Kaboom','Whizz','Thunk',
+        'Fwoosh','Smash','BoomZap','Twack','Womp','Blam','Shhh','Blorp',
+        'Blitz','Flick','Snapp','Whack','Kablam','ZingZap','ThunkBang','BopBop'
     ]
 
     constructor() {
@@ -14,7 +17,8 @@ class WubbleApp extends HTMLElement {
     }
 
     private handleKey(e: KeyboardEvent) {
-        const wordText = this.wordsPool[Math.floor(Math.random() * this.wordsPool.length)]
+        let wordText = this.wordsPool[Math.floor(Math.random() * this.wordsPool.length)]
+        wordText = wordText.split('').sort(() => Math.random() - 0.5).join('')
         const word = document.createElement('div')
         word.className = 'word'
         word.textContent = wordText
@@ -22,16 +26,16 @@ class WubbleApp extends HTMLElement {
 
         let x = window.innerWidth / 2 + (Math.random() * 200 - 100)
         let y = window.innerHeight / 2 + (Math.random() * 200 - 100)
-        let vx = (Math.random() - 0.5) * 6
-        let vy = -5 + (Math.random() - 0.5) * 3
+        let vx = (Math.random() - 0.5) * 8
+        let vy = -6 + (Math.random() - 0.5) * 4
         let opacity = 1
 
         const animate = () => {
-            vy += 0.15
+            vy += 0.18
             x += vx
             y += vy
-            opacity = Math.max(0, opacity - 0.01)
-            const scale = 0.8 + opacity * 0.4
+            opacity = Math.max(0, opacity - 0.012)
+            const scale = 0.8 + opacity * 0.5
             word.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
             word.style.opacity = `${opacity}`
             if (opacity > 0) requestAnimationFrame(animate)
@@ -44,21 +48,34 @@ class WubbleApp extends HTMLElement {
 
     private playWobble() {
         try {
+            const now = this.audioCtx.currentTime
             const osc = this.audioCtx.createOscillator()
-            const gain = this.audioCtx.createGain()
             osc.type = 'triangle'
-            osc.frequency.value = 60 + Math.random() * 20 // low frequency for bass
-            gain.gain.value = 0.2
+            osc.frequency.value = 50 + Math.random() * 20
+
+            const gain = this.audioCtx.createGain()
+            gain.gain.setValueAtTime(0, now)
+            gain.gain.linearRampToValueAtTime(0.3, now + 0.02)
+            gain.gain.linearRampToValueAtTime(0, now + 0.6)
+
+            const lfo = this.audioCtx.createOscillator()
+            lfo.type = 'sine'
+            lfo.frequency.value = 3 + Math.random() * 5
+
+            const lfoGain = this.audioCtx.createGain()
+            lfoGain.gain.value = 40 + Math.random() * 20
+
+            lfo.connect(lfoGain)
+            lfoGain.connect(osc.frequency)
 
             osc.connect(gain)
             gain.connect(this.audioCtx.destination)
 
-            const now = this.audioCtx.currentTime
             osc.start(now)
-            osc.stop(now + 0.5)
-        } catch (err) {
-            console.warn('Audio failed:', err)
-        }
+            osc.stop(now + 0.6)
+            lfo.start(now)
+            lfo.stop(now + 0.6)
+        } catch {}
     }
 }
 
