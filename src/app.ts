@@ -9,23 +9,17 @@ class WubbleApp extends HTMLElement {
 
     constructor() {
         super()
-
-        // Audio context
         this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
-
-        // Listen for key presses
         document.addEventListener('keydown', e => this.handleKey(e))
     }
 
     private handleKey(e: KeyboardEvent) {
-        // Create word
         const wordText = this.wordsPool[Math.floor(Math.random() * this.wordsPool.length)]
         const word = document.createElement('div')
         word.className = 'word'
         word.textContent = wordText
-        document.body.appendChild(word) // append to body for positioning
+        document.body.appendChild(word)
 
-        // Position and velocity
         let x = window.innerWidth / 2 + (Math.random() * 200 - 100)
         let y = window.innerHeight / 2 + (Math.random() * 200 - 100)
         let vx = (Math.random() - 0.5) * 6
@@ -43,9 +37,8 @@ class WubbleApp extends HTMLElement {
             if (opacity > 0) requestAnimationFrame(animate)
             else word.remove()
         }
-        requestAnimationFrame(animate)
 
-        // Play bass wobble sound
+        requestAnimationFrame(animate)
         this.playWobble()
     }
 
