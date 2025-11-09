@@ -1,31 +1,31 @@
 import './styles.sass'
 
 class WubbleApp extends HTMLElement {
-    private container: HTMLDivElement
-    private panel: HTMLDivElement
-    private wordsPool: string[] = ['Boom','Zap','Wobble','Fizz','Bop','Bang','Glitch','Spark','Pop','Zing','Wham','Funk','Twist','Zoom','Crack']
+    private audioCtx: AudioContext
+    private wordsPool: string[] = [
+        'Boom','Zap','Wobble','Fizz','Bop','Bang','Glitch',
+        'Spark','Pop','Zing','Wham','Funk','Twist','Zoom','Crack'
+    ]
 
     constructor() {
         super()
-        this.container = document.createElement('div')
-        this.container.className = 'wubble-container'
-        this.appendChild(this.container)
 
-        this.panel = document.createElement('div')
-        this.panel.className = 'glass-panel'
-        this.panel.textContent = 'Press any key!'
-        this.container.appendChild(this.panel)
+        // Audio context
+        this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
 
+        // Listen for key presses
         document.addEventListener('keydown', e => this.handleKey(e))
     }
 
     private handleKey(e: KeyboardEvent) {
+        // Create word
         const wordText = this.wordsPool[Math.floor(Math.random() * this.wordsPool.length)]
         const word = document.createElement('div')
         word.className = 'word'
         word.textContent = wordText
-        document.body.appendChild(word) // append to body for absolute/fixed positioning
+        document.body.appendChild(word) // append to body for positioning
 
+        // Position and velocity
         let x = window.innerWidth / 2 + (Math.random() * 200 - 100)
         let y = window.innerHeight / 2 + (Math.random() * 200 - 100)
         let vx = (Math.random() - 0.5) * 6
@@ -44,6 +44,28 @@ class WubbleApp extends HTMLElement {
             else word.remove()
         }
         requestAnimationFrame(animate)
+
+        // Play bass wobble sound
+        this.playWobble()
+    }
+
+    private playWobble() {
+        try {
+            const osc = this.audioCtx.createOscillator()
+            const gain = this.audioCtx.createGain()
+            osc.type = 'triangle'
+            osc.frequency.value = 60 + Math.random() * 20 // low frequency for bass
+            gain.gain.value = 0.2
+
+            osc.connect(gain)
+            gain.connect(this.audioCtx.destination)
+
+            const now = this.audioCtx.currentTime
+            osc.start(now)
+            osc.stop(now + 0.5)
+        } catch (err) {
+            console.warn('Audio failed:', err)
+        }
     }
 }
 
