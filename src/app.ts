@@ -2,27 +2,73 @@ import './styles.sass'
 
 class WubbleApp extends HTMLElement {
     audioCtx: AudioContext
-    container: HTMLDivElement
+    canvas: HTMLCanvasElement
+    ctx: CanvasRenderingContext2D
+    message: HTMLDivElement
     wordsPool: string[] = [
-        'Boom', 'Zap', 'Wobble', 'Fizz', 'Bop', 'Bang', 'Glitch',
-        'Spark', 'Pop', 'Zing', 'Wham', 'Funk', 'Twist', 'Zoom', 'Crack',
-        'Bam', 'Clash', 'Splat', 'BangBang', 'Zwoop', 'Kaboom', 'Whizz', 'Thunk',
-        'Fwoosh', 'Smash', 'BoomZap', 'Twack', 'Womp', 'Blam', 'Shhh', 'Blorp',
-        'Blitz', 'Flick', 'Snapp', 'Whack', 'Kablam', 'ZingZap', 'ThunkBang', 'BopBop'
+        'Boom','Zap','Wobble','Fizz','Bop','Bang','Glitch','Spark','Pop','Zing','Wham',
+        'Funk','Twist','Zoom','Crack','Bam','Clash','Splat','BangBang','Zwoop','Kaboom',
+        'Whizz','Thunk','Fwoosh','Smash','BoomZap','Twack','Womp','Blam','Shhh','Blorp',
+        'Blitz','Flick','Snapp','Whack','Kablam','ZingZap','ThunkBang','BopBop'
     ]
+
+    lastKeyTime = 0
+    waveEnergy = 0
 
     constructor() {
         super()
         this.audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)()
+        this.canvas = document.createElement('canvas')
+        this.canvas.className = 'wubble-bg'
+        this.ctx = this.canvas.getContext('2d')!
 
-        this.container = document.createElement('div')
-        this.container.className = 'wubble-container'
-        this.appendChild(this.container)
+        document.body.appendChild(this.canvas)
+        window.addEventListener('resize', () => this.resizeCanvas())
+        this.resizeCanvas()
+        requestAnimationFrame(() => this.drawWave())
 
+        this.message = document.createElement('div')
+        this.message.className = 'wubble-message'
+        this.message.textContent = 'WAHP KEYS'
+
+        document.body.appendChild(this.message)
         document.addEventListener('keydown', e => this.handleKey(e))
+        setInterval(() => this.checkInactivity(), 200)
+    }
+
+    resizeCanvas() {
+        this.canvas.width = window.innerWidth
+        this.canvas.height = window.innerHeight
+    }
+
+    drawWave(time = 0) {
+        const ctx = this.ctx
+        const { width, height } = this.canvas
+        ctx.clearRect(0, 0, width, height)
+        const amplitude = height * (0.15 + this.waveEnergy * 0.25)
+        const freq = 0.002 + this.waveEnergy * 0.004
+        const lineWidth = 6
+        ctx.beginPath()
+
+        for (let x = 0; x < width; x++) {
+            const y = height / 2 + Math.sin(x * freq + time * 0.002) * amplitude
+            const hue = (x / width) * 360 + time * 0.25
+            ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`
+            ctx.lineWidth = lineWidth
+            if (x === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+        }
+
+        ctx.stroke()
+        this.waveEnergy = Math.max(0, this.waveEnergy - 0.01)
+        requestAnimationFrame(t => this.drawWave(t))
     }
 
     handleKey(_: KeyboardEvent) {
+        this.lastKeyTime = Date.now()
+        this.waveEnergy = Math.min(1, this.waveEnergy + 0.4)
+        this.message.style.opacity = '0'
+
         let wordText = this.wordsPool[Math.floor(Math.random() * this.wordsPool.length)]
         wordText = wordText.split('').sort(() => Math.random() - 0.5).join('')
         const word = document.createElement('div')
@@ -32,10 +78,9 @@ class WubbleApp extends HTMLElement {
         const hue = Math.floor(Math.random() * 360)
         word.style.color = `hsl(${hue}, 100%, 60%)`
         word.style.textShadow = `
-        0 0 10px hsl(${hue}, 100%, 70%),
-        0 0 30px hsl(${hue}, 100%, 50%)
-    `
-
+            0 0 10px hsl(${hue}, 100%, 70%),
+            0 0 30px hsl(${hue}, 100%, 50%)
+        `
         document.body.appendChild(word)
 
         let x = window.innerWidth / 2 + (Math.random() * 200 - 100)
@@ -55,19 +100,23 @@ class WubbleApp extends HTMLElement {
             if (opacity > 0) requestAnimationFrame(animate)
             else word.remove()
         }
-
         requestAnimationFrame(animate)
+
         this.playWobble()
+    }
+
+    checkInactivity() {
+        if (Date.now() - this.lastKeyTime > 2500)
+            this.message.style.opacity = '1'
     }
 
     playWobble() {
         try {
             const now = this.audioCtx.currentTime
-
             const osc = this.audioCtx.createOscillator()
-            const oscTypes: OscillatorType[] = ['sine', 'triangle', 'sawtooth']
-            osc.type = oscTypes[Math.floor(Math.random() * 2)] // mostly sine or triangle
-            osc.frequency.value = 35 + Math.random() * 45 // sub-bass range
+            const types: OscillatorType[] = ['sine', 'triangle']
+            osc.type = types[Math.floor(Math.random() * types.length)]
+            osc.frequency.value = 35 + Math.random() * 45
 
             const gain = this.audioCtx.createGain()
             gain.gain.setValueAtTime(0, now)
@@ -77,13 +126,11 @@ class WubbleApp extends HTMLElement {
             const filter = this.audioCtx.createBiquadFilter()
             filter.type = 'lowpass'
             filter.frequency.value = 200 + Math.random() * 200
-            filter.Q.value = 1 + Math.random() * 5
 
             const lfo = this.audioCtx.createOscillator()
+            const lfoGain = this.audioCtx.createGain()
             lfo.type = 'sine'
             lfo.frequency.value = 1 + Math.random() * 3
-
-            const lfoGain = this.audioCtx.createGain()
             lfoGain.gain.value = 10 + Math.random() * 20
             lfo.connect(lfoGain)
             lfoGain.connect(osc.frequency)
