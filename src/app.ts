@@ -6,10 +6,10 @@ class WubbleApp extends HTMLElement {
     ctx: CanvasRenderingContext2D
     message: HTMLDivElement
     wordsPool: string[] = [
-        'Boom','Zap','Wobble','Fizz','Bop','Bang','Glitch','Spark','Pop','Zing','Wham',
-        'Funk','Twist','Zoom','Crack','Bam','Clash','Splat','BangBang','Zwoop','Kaboom',
-        'Whizz','Thunk','Fwoosh','Smash','BoomZap','Twack','Womp','Blam','Shhh','Blorp',
-        'Blitz','Flick','Snapp','Whack','Kablam','ZingZap','ThunkBang','BopBop'
+        'Boom', 'Zap', 'Wobble', 'Fizz', 'Bop', 'Bang', 'Glitch', 'Spark', 'Pop', 'Zing', 'Wham',
+        'Funk', 'Twist', 'Zoom', 'Crack', 'Bam', 'Clash', 'Splat', 'BangBang', 'Zwoop', 'Kaboom',
+        'Whizz', 'Thunk', 'Fwoosh', 'Smash', 'BoomZap', 'Twack', 'Womp', 'Blam', 'Shhh', 'Blorp',
+        'Blitz', 'Flick', 'Snapp', 'Whack', 'Kablam', 'ZingZap', 'ThunkBang', 'BopBop'
     ]
 
     lastKeyTime = 0
@@ -29,16 +29,20 @@ class WubbleApp extends HTMLElement {
 
         this.message = document.createElement('div')
         this.message.className = 'wubble-message'
-        this.message.textContent = 'WAHP KEYS'
-
+        this.message.textContent = 'PRESS KEYS'
         document.body.appendChild(this.message)
-        document.addEventListener('keydown', e => this.handleKey(e))
+
+        document.addEventListener('touchstart', e => this.handleKey(e as any))
+        document.addEventListener('keydown', e => this.handleKey(e as any))
         setInterval(() => this.checkInactivity(), 200)
     }
 
     resizeCanvas() {
-        this.canvas.width = window.innerWidth
-        this.canvas.height = window.innerHeight
+        const scale = window.devicePixelRatio || 1
+        this.canvas.width = window.innerWidth * scale
+        this.canvas.height = window.innerHeight * scale
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0)
+        this.ctx.scale(scale, scale)
     }
 
     drawWave(time = 0) {
@@ -49,22 +53,21 @@ class WubbleApp extends HTMLElement {
         const freq = 0.002 + this.waveEnergy * 0.004
         const lineWidth = 6
         ctx.beginPath()
-
         for (let x = 0; x < width; x++) {
             const y = height / 2 + Math.sin(x * freq + time * 0.002) * amplitude
             const hue = (x / width) * 360 + time * 0.25
-            ctx.strokeStyle = `hsl(${hue}, 100%, 60%)`
+            ctx.strokeStyle = `hsl(${hue},100%,60%)`
             ctx.lineWidth = lineWidth
             if (x === 0) ctx.moveTo(x, y)
             else ctx.lineTo(x, y)
         }
-
         ctx.stroke()
         this.waveEnergy = Math.max(0, this.waveEnergy - 0.01)
         requestAnimationFrame(t => this.drawWave(t))
     }
 
-    handleKey(_: KeyboardEvent) {
+    handleKey(_: Event) {
+        if (this.audioCtx.state === 'suspended') this.audioCtx.resume()
         this.lastKeyTime = Date.now()
         this.waveEnergy = Math.min(1, this.waveEnergy + 0.4)
         this.message.style.opacity = '0'
@@ -76,10 +79,10 @@ class WubbleApp extends HTMLElement {
         word.textContent = wordText
 
         const hue = Math.floor(Math.random() * 360)
-        word.style.color = `hsl(${hue}, 100%, 60%)`
+        word.style.color = `hsl(${hue},100%,60%)`
         word.style.textShadow = `
-            0 0 10px hsl(${hue}, 100%, 70%),
-            0 0 30px hsl(${hue}, 100%, 50%)
+            0 0 10px hsl(${hue},100%,70%),
+            0 0 30px hsl(${hue},100%,50%)
         `
         document.body.appendChild(word)
 
@@ -95,7 +98,7 @@ class WubbleApp extends HTMLElement {
             y += vy
             opacity = Math.max(0, opacity - 0.012)
             const scale = 0.8 + opacity * 0.5
-            word.style.transform = `translate(${x}px, ${y}px) scale(${scale})`
+            word.style.transform = `translate(${x}px,${y}px) scale(${scale})`
             word.style.opacity = `${opacity}`
             if (opacity > 0) requestAnimationFrame(animate)
             else word.remove()
@@ -106,8 +109,11 @@ class WubbleApp extends HTMLElement {
     }
 
     checkInactivity() {
-        if (Date.now() - this.lastKeyTime > 2500)
+        if (Date.now() - this.lastKeyTime > 2500) {
+            const baseText = 'PRESS KEYS'
+            this.message.textContent = baseText.split('').sort(() => Math.random() - 0.5).join('')
             this.message.style.opacity = '1'
+        }
     }
 
     playWobble() {
